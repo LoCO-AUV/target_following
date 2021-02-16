@@ -1,0 +1,16 @@
+<launch>
+<arg name="flip" default="false"/>
+ <group ns="loco"> 
+  <node pkg="ar_recog" type="ar_recog" name="ar_recog_pid_test">
+    <param name="image" value="/camera_array/right/image_raw" />
+    <param name="aov" value="0.67"/>
+    <param name="camera_para" value="$(find ar_recog)/bin/camera_para.dat"/>
+    <param name="model_name" value="$(find ar_recog)/bin/object_data"/>
+    <param name="min_confidence" value="0.2"/>
+    <param name="flip" value="$(arg flip)"/>
+  </node>
+ </group>
+ 
+ <node pkg="target_following" type="artag_bbox_publisher.py" name="artag_bbox_publisher" />
+
+</launch>

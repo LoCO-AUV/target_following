@@ -1,0 +1,14 @@
+std_msgs/Header  header
+
+float32 flat_ang_vel_kp
+float32 flat_ang_vel_deriv_prediction_dt
+float32 flat_z_kp
+float32 flat_z_deriv_prediction_dt
+
+float32 knifeedge_ang_vel_kp
+float32 knifeedge_ang_vel_deriv_prediction_dt
+float32 knifeedge_z_kp
+float32 knifeedge_z_deriv_prediction_dt
+float32 knifeedge_lin_vel_kp
+float32 knifeedge_lin_vel_deriv_prediction_dt
+

@@ -1,0 +1,4 @@
+<launch>
+	<node pkg="target_following" type="pid.py" output="screen" name="pid" /> 
+        <node pkg="rqt_reconfigure" type="rqt_reconfigure" output="screen" name="rqt_reconfigure" />
+</launch>
