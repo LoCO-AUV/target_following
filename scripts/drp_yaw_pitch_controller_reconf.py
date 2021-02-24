@@ -43,12 +43,11 @@ from target_following.cfg import DRPControllerParamsConfig
 class DRPReactiveController(object):
     def __init__(self):
         rospy.init_node('drp_reactive_controller')
+        self.params_map = {}
 
         self.vx_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
         self.yaw_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
-	    self.pitch_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
-	    self.params_map = {}
-	    self.set_pid_params()
+        self.pitch_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
 
         self.current_state = None
         self.current_observation = None
@@ -65,16 +64,17 @@ class DRPReactiveController(object):
         self.image_w = msg.image_w
         self.image_h = msg.image_h
         print ("/drp/drp_target has come up")
-        
-        self.observation_sub = rospy.Subscriber("/drp/drp_target", DiverRelativePosition, self.observation_callback, queue_size=3)
-        self.rpy_pub = rospy.Publisher('/loco/command', Command, queue_size=3)
-	    self.cmd_msg = Command()
 
         self.controller_params_cfg = None
         self.dynamic_reconfigure_srv = Server(DRPControllerParamsConfig, self.dynamic_reconfigure_callback)
+        self.set_pid_params()
+        
+        self.observation_sub = rospy.Subscriber("/drp/drp_target", DiverRelativePosition, self.observation_callback, queue_size=3)
+        self.rpy_pub = rospy.Publisher('/loco/command', Command, queue_size=3)
+        self.cmd_msg = Command()
 	
 
-    self.dynamic_reconfigure_callback(self, config, level):
+    def dynamic_reconfigure_callback(self, config, level):
         self.controller_params_cfg = config
         self.set_pid_params()
         return self.controller_params_cfg
@@ -160,33 +160,33 @@ class DRPReactiveController(object):
         now = rospy.Time.now().to_sec()
         target_active = (self.current_observation is not None and ( now - self.observation_ts  < (self.params_map['sec_before_giving_up'])))
 
-	if target_active:
+        if target_active:
 	    ss, yy, pp, rr, hh = 0, 0, 0, 0, 0
             error_forward, error_yaw, error_pitch = self.compute_errors_from_estimate()
 	    #print (error_forward, error_yaw,  error_pitch)
       
-        self.vx_pid.update(error_forward, now)
-        self.yaw_pid.update(error_yaw, now)
-        self.pitch_pid.update(error_pitch, now)
+            self.vx_pid.update(error_forward, now)
+            self.yaw_pid.update(error_yaw, now)
+            self.pitch_pid.update(error_pitch, now)
  
-        if self.vx_pid.is_initialized(): # forward pseudospeed
-            ss = self._clip(self.vx_pid.control, 0, 1)  
-            if ss <= self.params_map['deadzone_abs_vel_error']:
-                ss = 0.0 
+            if self.vx_pid.is_initialized(): # forward pseudospeed
+                ss = self._clip(self.vx_pid.control, 0, 1)  
+                if ss <= self.params_map['deadzone_abs_vel_error']:
+                    ss = 0.0 
 	        else: 
-                ss = self._clip(self.params_map['magnify_speed']*ss, 0, 1)  
+                    ss = self._clip(self.params_map['magnify_speed']*ss, 0, 1)  
 
-        if self.yaw_pid.is_initialized(): # yaw pseudospeed
-            yy = self._clip(self.yaw_pid.control, -1, 1)
-            if abs(yy) <= self.params_map['deadzone_abs_yaw_error']:
-                yy = 0.0           
+            if self.yaw_pid.is_initialized(): # yaw pseudospeed
+                yy = self._clip(self.yaw_pid.control, -1, 1)
+                if abs(yy) <= self.params_map['deadzone_abs_yaw_error']:
+                    yy = 0.0           
 
-        if self.pitch_pid.is_initialized(): # pitch pseudospeed         
-            pp = self._clip(self.pitch_pid.control, -1, 1) 
-            if abs(pp) <= self.params_map['deadzone_abs_pitch_error']:
-                pp = 0.0
+            if self.pitch_pid.is_initialized(): # pitch pseudospeed         
+                pp = self._clip(self.pitch_pid.control, -1, 1) 
+                if abs(pp) <= self.params_map['deadzone_abs_pitch_error']:
+                    pp = 0.0
 
-        print ('V, yaw, pitch : ', (ss, yy,  pp) )
+            print ('V, yaw, pitch : ', (ss, yy,  pp) )
 	    self.set_vyprh_cmd(ss, yy, pp, rr, hh)
 
 	else:
