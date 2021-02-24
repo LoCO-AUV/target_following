@@ -1,2 +1,2 @@
-# target_detection
-This directory was on the Jetson, please update with original location and/or use
+# target_following
+This package uses a PID controller to visually follow a bounding box target with an AUV.
