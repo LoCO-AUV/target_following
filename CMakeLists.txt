@@ -37,6 +37,7 @@ generate_dynamic_reconfigure_options(
   cfg/BBoxControllerParams.cfg
   cfg/PIDControllerParams.cfg
   cfg/ColorBBoxParams.cfg
+  cfg/DRPControllerParams.cfg
 )
 
 catkin_package(

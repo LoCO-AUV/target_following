@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="target_following" type="drp_yaw_pitch_controller_reconf.py" output="screen" name="drp_yaw_pitch_controller">
+       <rosparam command="load" file="$(find target_following)/data/drp_yaw_pitch_ctr_pid_params.yaml" />
+  </node>
+</launch>
