@@ -31,6 +31,7 @@ from pid import PID
 
 from dynamic_reconfigure.server import Server
 from target_following.cfg import DRPControllerParamsConfig
+from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
 
 """
  Accepts DRP as input (msg type DiverRelativePosition)
@@ -47,6 +48,7 @@ class DRPReactiveController(object):
         self.vx_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
         self.yaw_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
         self.pitch_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
+        self.controller_active = False
 
         self.current_state = None
         self.current_observation = None
@@ -71,6 +73,23 @@ class DRPReactiveController(object):
         self.observation_sub = rospy.Subscriber("/drp/drp_target", DiverRelativePosition, self.observation_callback, queue_size=3)
         self.rpy_pub = rospy.Publisher('/loco/command', Command, queue_size=3)
         self.cmd_msg = Command()
+
+        rospy.Service('drp_reactive_controller/start', Trigger, self.start_service_handler)
+        rospy.Service('drp_reactive_controller/stop', Trigger, self.stop_service_handler)
+
+    def start_service_handler(self, request):
+        self.controller_active = True
+        t = TriggerResponse()
+        t.success=True
+        t.message="DRP Controller started"
+        return t
+
+    def stop_service_handler(self, request):
+        self.controller_active = False
+        t = TriggerResponse()
+        t.success=True
+        t.message="DRP Controller stopped"
+        return t
 	
 
     def dynamic_reconfigure_callback(self, config, level):
@@ -207,7 +226,8 @@ class DRPReactiveController(object):
 
     def publish_control(self):
         #print ('publishing ', self.cmd_msg)
-        self.rpy_pub.publish(self.cmd_msg)
+        if self.controller_active:
+            self.rpy_pub.publish(self.cmd_msg)
 
 
         
