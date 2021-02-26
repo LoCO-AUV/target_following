@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/python3
 # This code is a part of the LoCO AUV project.
 # Copyright (C) The Regents of the University of Minnesota
 
@@ -127,7 +126,7 @@ class DRPReactiveController(object):
 
         #Our image target point is centered horizontally, and 1/3 of the way down vertically.
         image_setpoint_x = self.image_w/2.0 
-        image_setpoint_y = self.image_h/3.0
+        image_setpoint_y = self.image_h/2.0 #########
 
         #Since PD is 0 if very far away and 1.0 if at ideal position, error should decrease as we get closer.        
         error_forward = 1.0 - pd
@@ -161,7 +160,7 @@ class DRPReactiveController(object):
         target_active = (self.current_observation is not None and ( now - self.observation_ts  < (self.params_map['sec_before_giving_up'])))
 
         if target_active:
-	    ss, yy, pp, rr, hh = 0, 0, 0, 0, 0
+            ss, yy, pp, rr, hh = 0, 0, 0, 0, 0
             error_forward, error_yaw, error_pitch = self.compute_errors_from_estimate()
 	    #print (error_forward, error_yaw,  error_pitch)
       
@@ -170,11 +169,12 @@ class DRPReactiveController(object):
             self.pitch_pid.update(error_pitch, now)
  
             if self.vx_pid.is_initialized(): # forward pseudospeed
-                ss = self._clip(self.vx_pid.control, 0, 1)  
-                if ss <= self.params_map['deadzone_abs_vel_error']:
-                    ss = 0.0 
-	        else: 
-                    ss = self._clip(self.params_map['magnify_speed']*ss, 0, 1)  
+                ss = self._clip(self.vx_pid.control, -1, 1)  
+                #if ss <= self.params_map['deadzone_abs_vel_error']:
+                    #pass
+                    #ss = 0.0 
+                # else: #####
+                ss = self._clip(self.params_map['magnify_speed']*ss, -1, 1)   #######
 
             if self.yaw_pid.is_initialized(): # yaw pseudospeed
                 yy = self._clip(self.yaw_pid.control, -1, 1)
@@ -187,19 +187,19 @@ class DRPReactiveController(object):
                     pp = 0.0
 
             print ('V, yaw, pitch : ', (ss, yy,  pp) )
-	    self.set_vyprh_cmd(ss, yy, pp, rr, hh)
+            self.set_vyprh_cmd(ss, yy, pp, rr, hh)
 
-	else:
-	    print ('Target out of sight.')
-	    self.set_vyprh_cmd(0, 0, 0, 0, 0)
+        else:
+            print ('Target out of sight.')
+            self.set_vyprh_cmd(0, 0, 0, 0, 0)
 
-	self._release_all_mutexes()        
-	return 
+        self._release_all_mutexes()        
+        return 
 
     def set_vyprh_cmd(self, ss, yy, pp, rr, hh):
-        self.cmd_msg.throttle = ss+0.2
+        self.cmd_msg.throttle = ss+0 # 0.2
         self.cmd_msg.yaw = yy
-        self.cmd_msg.pitch = pp
+        self.cmd_msg.pitch = -pp
         #self.cmd_msg.roll = rr
         #self.cmd_msg.heave = hh
 	
