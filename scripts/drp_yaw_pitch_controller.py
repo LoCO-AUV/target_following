@@ -21,7 +21,7 @@ import rospy
 from loco_pilot.msg import Command
 from std_msgs.msg import Float32
 from target_following.msg import TargetObservation, TargetObservations
-from auv_aoc.msg import DiverRelativePosition
+from adroc.msg import DiverRelativePosition
 
 from math import pi, sqrt, exp, log, tanh, cos, sin
 from threading import Lock
@@ -42,9 +42,9 @@ class DRPReactiveController(object):
 
         self.vx_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
         self.yaw_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
-	self.pitch_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
-	self.params_map = {}
-	self.set_pid_params()
+    self.pitch_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
+    self.params_map = {}
+    self.set_pid_params()
 
         self.current_state = None
         self.current_observation = None
@@ -64,8 +64,8 @@ class DRPReactiveController(object):
         
         self.observation_sub = rospy.Subscriber("/drp/drp_target", DiverRelativePosition, self.observation_callback, queue_size=3)
         self.rpy_pub = rospy.Publisher('/loco/command', Command, queue_size=3)
-	self.cmd_msg = Command()
-	
+    self.cmd_msg = Command()
+    
         
     def observation_callback(self, msg):
         self.current_observation_mutex.acquire()
@@ -81,14 +81,14 @@ class DRPReactiveController(object):
         self.params_map['flat_vel_ki'] = rospy.get_param('~flat_vel_ki')
         self.params_map['flat_vel_deriv_prediction_dt'] = rospy.get_param('~flat_vel_deriv_prediction_dt')
         self.params_map['flat_vel_max_deriv_noise_gain'] = rospy.get_param('~flat_vel_max_deriv_noise_gain')
-	#print (self.params_map['flat_vel_kp'], self.params_map['flat_vel_ki'], self.params_map['flat_vel_deriv_prediction_dt'])
+    #print (self.params_map['flat_vel_kp'], self.params_map['flat_vel_ki'], self.params_map['flat_vel_deriv_prediction_dt'])
 
         self.params_map['flat_yaw_kp'] = rospy.get_param('~flat_yaw_kp')
         self.params_map['flat_yaw_ki'] = rospy.get_param('~flat_yaw_ki')
         self.params_map['flat_yaw_deriv_prediction_dt'] = rospy.get_param('~flat_yaw_deriv_prediction_dt')
         self.params_map['flat_yaw_max_deriv_noise_gain'] = rospy.get_param('~flat_yaw_max_deriv_noise_gain')
-	#print (self.params_map['flat_yaw_kp'], self.params_map['flat_yaw_ki'], self.params_map['flat_yaw_deriv_prediction_dt'])
-	
+    #print (self.params_map['flat_yaw_kp'], self.params_map['flat_yaw_ki'], self.params_map['flat_yaw_deriv_prediction_dt'])
+    
 
         self.params_map['flat_pitch_kp'] = rospy.get_param('~flat_pitch_kp')
         self.params_map['flat_pitch_ki'] = rospy.get_param('~flat_pitch_ki')
@@ -103,11 +103,11 @@ class DRPReactiveController(object):
         self.params_map['sec_before_giving_up'] = rospy.get_param('~sec_before_giving_up')
 
         self.vx_pid.set_params(self.params_map['flat_vel_kp'], self.params_map['flat_vel_ki'], 
-		                        self.params_map['flat_vel_deriv_prediction_dt'], self.params_map['flat_vel_max_deriv_noise_gain'])
+                                self.params_map['flat_vel_deriv_prediction_dt'], self.params_map['flat_vel_max_deriv_noise_gain'])
         self.yaw_pid.set_params(self.params_map['flat_yaw_kp'], self.params_map['flat_yaw_ki'], 
-		                        self.params_map['flat_yaw_deriv_prediction_dt'], self.params_map['flat_yaw_max_deriv_noise_gain'])
+                                self.params_map['flat_yaw_deriv_prediction_dt'], self.params_map['flat_yaw_max_deriv_noise_gain'])
         self.pitch_pid.set_params(self.params_map['flat_pitch_kp'], self.params_map['flat_pitch_ki'], 
-		                        self.params_map['flat_pitch_deriv_prediction_dt'], self.params_map['flat_pitch_max_deriv_noise_gain'])
+                                self.params_map['flat_pitch_deriv_prediction_dt'], self.params_map['flat_pitch_max_deriv_noise_gain'])
             
    
             
@@ -148,10 +148,10 @@ class DRPReactiveController(object):
         now = rospy.Time.now().to_sec()
         target_active = (self.current_observation is not None and ( now - self.observation_ts  < (self.params_map['sec_before_giving_up'])))
 
-	if target_active:
-	    ss, yy, pp, rr, hh = 0, 0, 0, 0, 0
+    if target_active:
+        ss, yy, pp, rr, hh = 0, 0, 0, 0, 0
             error_forward, error_yaw, error_pitch = self.compute_errors_from_estimate()
-	    #print (error_forward, error_yaw,  error_pitch)
+        #print (error_forward, error_yaw,  error_pitch)
       
             self.vx_pid.update(error_forward, now)
             self.yaw_pid.update(error_yaw, now)
@@ -161,12 +161,12 @@ class DRPReactiveController(object):
                 ss = self._clip(self.vx_pid.control-self.params_map['target_bbox_image_ratio'], 0, 1)  
                 if ss <= self.params_map['deadzone_abs_vel_error']:
                     ss = 0.0 
-	        else: 
-        		ss = self._clip(self.params_map['magnify_speed']*ss, 0, 1)  
+            else: 
+                ss = self._clip(self.params_map['magnify_speed']*ss, 0, 1)  
 
             if self.yaw_pid.is_initialized(): # yaw pseudospeed
                 yy = self._clip(self.yaw_pid.control, -1, 1)
-	        if abs(yy) <= self.params_map['deadzone_abs_yaw_error']:
+            if abs(yy) <= self.params_map['deadzone_abs_yaw_error']:
                     yy = 0.0           
 
             if self.pitch_pid.is_initialized(): # pitch pseudospeed         
@@ -175,14 +175,14 @@ class DRPReactiveController(object):
                     pp = 0.0
 
             print ('V, yaw, pitch : ', (ss, yy,  pp) )
-	    self.set_vyprh_cmd(ss, yy, pp, rr, hh)
+        self.set_vyprh_cmd(ss, yy, pp, rr, hh)
 
-	else:
-	    print ('Target out of sight.')
-	    self.set_vyprh_cmd(0, 0, 0, 0, 0)
+    else:
+        print ('Target out of sight.')
+        self.set_vyprh_cmd(0, 0, 0, 0, 0)
 
-	self._release_all_mutexes()        
-	return 
+    self._release_all_mutexes()        
+    return 
 
     def set_vyprh_cmd(self, ss, yy, pp, rr, hh):
         self.cmd_msg.throttle = ss+0.2
@@ -190,7 +190,7 @@ class DRPReactiveController(object):
         self.cmd_msg.pitch = pp
         #self.cmd_msg.roll = rr
         #self.cmd_msg.heave = hh
-	
+    
 
 
     def publish_control(self):
