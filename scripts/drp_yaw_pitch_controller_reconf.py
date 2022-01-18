@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 # This code is a part of the LoCO AUV project.
 # Copyright (C) The Regents of the University of Minnesota
 
@@ -32,6 +31,7 @@ from pid import PID
 
 from dynamic_reconfigure.server import Server
 from target_following.cfg import DRPControllerParamsConfig
+from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
 
 """
  Accepts DRP as input (msg type DiverRelativePosition)
@@ -48,6 +48,7 @@ class DRPReactiveController(object):
         self.vx_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
         self.yaw_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
         self.pitch_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
+        self.controller_active = False
 
         self.current_state = None
         self.current_observation = None
@@ -72,6 +73,23 @@ class DRPReactiveController(object):
         self.observation_sub = rospy.Subscriber("/drp/drp_target", DiverRelativePosition, self.observation_callback, queue_size=3)
         self.rpy_pub = rospy.Publisher('/loco/command', Command, queue_size=3)
         self.cmd_msg = Command()
+
+        rospy.Service('drp_reactive_controller/start', Trigger, self.start_service_handler)
+        rospy.Service('drp_reactive_controller/stop', Trigger, self.stop_service_handler)
+
+    def start_service_handler(self, request):
+        self.controller_active = True
+        t = TriggerResponse()
+        t.success=True
+        t.message="DRP Controller started"
+        return t
+
+    def stop_service_handler(self, request):
+        self.controller_active = False
+        t = TriggerResponse()
+        t.success=True
+        t.message="DRP Controller stopped"
+        return t
 	
 
     def dynamic_reconfigure_callback(self, config, level):
@@ -127,7 +145,7 @@ class DRPReactiveController(object):
 
         #Our image target point is centered horizontally, and 1/3 of the way down vertically.
         image_setpoint_x = self.image_w/2.0 
-        image_setpoint_y = self.image_h/3.0
+        image_setpoint_y = self.image_h/2.0 #########
 
         #Since PD is 0 if very far away and 1.0 if at ideal position, error should decrease as we get closer.        
         error_forward = 1.0 - pd
@@ -161,7 +179,7 @@ class DRPReactiveController(object):
         target_active = (self.current_observation is not None and ( now - self.observation_ts  < (self.params_map['sec_before_giving_up'])))
 
         if target_active:
-	    ss, yy, pp, rr, hh = 0, 0, 0, 0, 0
+            ss, yy, pp, rr, hh = 0, 0, 0, 0, 0
             error_forward, error_yaw, error_pitch = self.compute_errors_from_estimate()
 	    #print (error_forward, error_yaw,  error_pitch)
       
@@ -170,11 +188,12 @@ class DRPReactiveController(object):
             self.pitch_pid.update(error_pitch, now)
  
             if self.vx_pid.is_initialized(): # forward pseudospeed
-                ss = self._clip(self.vx_pid.control, 0, 1)  
-                if ss <= self.params_map['deadzone_abs_vel_error']:
-                    ss = 0.0 
-	        else: 
-                    ss = self._clip(self.params_map['magnify_speed']*ss, 0, 1)  
+                ss = self._clip(self.vx_pid.control, -1, 1)  
+                #if ss <= self.params_map['deadzone_abs_vel_error']:
+                    #pass
+                    #ss = 0.0 
+                # else: #####
+                ss = self._clip(self.params_map['magnify_speed']*ss, -1, 1)   #######
 
             if self.yaw_pid.is_initialized(): # yaw pseudospeed
                 yy = self._clip(self.yaw_pid.control, -1, 1)
@@ -187,18 +206,18 @@ class DRPReactiveController(object):
                     pp = 0.0
 
             print ('V, yaw, pitch : ', (ss, yy,  pp) )
-	    self.set_vyprh_cmd(ss, yy, pp, rr, hh)
+            self.set_vyprh_cmd(ss, yy, pp, rr, hh)
 
-	else:
-	    print ('Target out of sight.')
-	    self.set_vyprh_cmd(0, 0, 0, 0, 0)
+        else:
+            print ('Target out of sight.')
+            self.set_vyprh_cmd(0, 0, 0, 0, 0)
 
-	self._release_all_mutexes()        
-	return 
+        self._release_all_mutexes()        
+        return 
 
     def set_vyprh_cmd(self, ss, yy, pp, rr, hh):
-        self.cmd_msg.throttle = ss+0.2
-        self.cmd_msg.yaw = yy
+        self.cmd_msg.throttle = ss+0 # 0.2
+        self.cmd_msg.yaw = -yy
         self.cmd_msg.pitch = pp
         #self.cmd_msg.roll = rr
         #self.cmd_msg.heave = hh
@@ -207,7 +226,8 @@ class DRPReactiveController(object):
 
     def publish_control(self):
         #print ('publishing ', self.cmd_msg)
-        self.rpy_pub.publish(self.cmd_msg)
+        if self.controller_active:
+            self.rpy_pub.publish(self.cmd_msg)
 
 
         
