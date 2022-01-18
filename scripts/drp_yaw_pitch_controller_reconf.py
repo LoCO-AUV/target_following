@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # This code is a part of the LoCO AUV project.
 # Copyright (C) The Regents of the University of Minnesota
 
@@ -21,7 +21,7 @@ import rospy
 from loco_pilot.msg import Command
 from std_msgs.msg import Float32
 from target_following.msg import TargetObservation, TargetObservations
-from auv_aoc.msg import DiverRelativePosition
+from adroc.msg import DiverRelativePosition
 
 from math import pi, sqrt, exp, log, tanh, cos, sin
 from threading import Lock
@@ -90,7 +90,6 @@ class DRPReactiveController(object):
         t.success=True
         t.message="DRP Controller stopped"
         return t
-	
 
     def dynamic_reconfigure_callback(self, config, level):
         self.controller_params_cfg = config
@@ -111,14 +110,14 @@ class DRPReactiveController(object):
         self.params_map['flat_vel_ki'] = self.controller_params_cfg.flat_vel_ki
         self.params_map['flat_vel_deriv_prediction_dt'] = self.controller_params_cfg.flat_vel_deriv_prediction_dt
         self.params_map['flat_vel_max_deriv_noise_gain'] = self.controller_params_cfg.flat_vel_max_deriv_noise_gain
-	#print (self.params_map['flat_vel_kp'], self.params_map['flat_vel_ki'], self.params_map['flat_vel_deriv_prediction_dt'])
+    #print (self.params_map['flat_vel_kp'], self.params_map['flat_vel_ki'], self.params_map['flat_vel_deriv_prediction_dt'])
 
         self.params_map['flat_yaw_kp'] = self.controller_params_cfg.flat_yaw_kp
         self.params_map['flat_yaw_ki'] = self.controller_params_cfg.flat_yaw_ki
         self.params_map['flat_yaw_deriv_prediction_dt'] = self.controller_params_cfg.flat_yaw_deriv_prediction_dt
         self.params_map['flat_yaw_max_deriv_noise_gain'] = self.controller_params_cfg.flat_yaw_max_deriv_noise_gain
-	#print (self.params_map['flat_yaw_kp'], self.params_map['flat_yaw_ki'], self.params_map['flat_yaw_deriv_prediction_dt'])
-	
+    #print (self.params_map['flat_yaw_kp'], self.params_map['flat_yaw_ki'], self.params_map['flat_yaw_deriv_prediction_dt'])
+    
 
         self.params_map['flat_pitch_kp'] = self.controller_params_cfg.flat_pitch_kp
         self.params_map['flat_pitch_ki'] = self.controller_params_cfg.flat_pitch_ki
@@ -132,11 +131,11 @@ class DRPReactiveController(object):
         self.params_map['sec_before_giving_up'] = self.controller_params_cfg.sec_before_giving_up
 
         self.vx_pid.set_params(self.params_map['flat_vel_kp'], self.params_map['flat_vel_ki'], 
-		                        self.params_map['flat_vel_deriv_prediction_dt'], self.params_map['flat_vel_max_deriv_noise_gain'])
+                                self.params_map['flat_vel_deriv_prediction_dt'], self.params_map['flat_vel_max_deriv_noise_gain'])
         self.yaw_pid.set_params(self.params_map['flat_yaw_kp'], self.params_map['flat_yaw_ki'], 
-		                        self.params_map['flat_yaw_deriv_prediction_dt'], self.params_map['flat_yaw_max_deriv_noise_gain'])
+                                self.params_map['flat_yaw_deriv_prediction_dt'], self.params_map['flat_yaw_max_deriv_noise_gain'])
         self.pitch_pid.set_params(self.params_map['flat_pitch_kp'], self.params_map['flat_pitch_ki'], 
-		                        self.params_map['flat_pitch_deriv_prediction_dt'], self.params_map['flat_pitch_max_deriv_noise_gain'])
+                                self.params_map['flat_pitch_deriv_prediction_dt'], self.params_map['flat_pitch_max_deriv_noise_gain'])
             
    
             
@@ -181,7 +180,7 @@ class DRPReactiveController(object):
         if target_active:
             ss, yy, pp, rr, hh = 0, 0, 0, 0, 0
             error_forward, error_yaw, error_pitch = self.compute_errors_from_estimate()
-	    #print (error_forward, error_yaw,  error_pitch)
+        #print (error_forward, error_yaw,  error_pitch)
       
             self.vx_pid.update(error_forward, now)
             self.yaw_pid.update(error_yaw, now)
@@ -217,11 +216,11 @@ class DRPReactiveController(object):
 
     def set_vyprh_cmd(self, ss, yy, pp, rr, hh):
         self.cmd_msg.throttle = ss+0 # 0.2
-        self.cmd_msg.yaw = -yy
-        self.cmd_msg.pitch = pp
+        self.cmd_msg.yaw = yy
+        self.cmd_msg.pitch = -pp
         #self.cmd_msg.roll = rr
         #self.cmd_msg.heave = hh
-	
+    
 
 
     def publish_control(self):
