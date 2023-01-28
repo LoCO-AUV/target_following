@@ -42,9 +42,9 @@ class DRPReactiveController(object):
 
         self.vx_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
         self.yaw_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
-    self.pitch_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
-    self.params_map = {}
-    self.set_pid_params()
+        self.pitch_pid = PID(kp=3, ki=0, deriv_prediction_dt=0.3, max_deriv_noise_gain=3)
+        self.params_map = {}
+        self.set_pid_params()
 
         self.current_state = None
         self.current_observation = None
@@ -64,7 +64,7 @@ class DRPReactiveController(object):
         
         self.observation_sub = rospy.Subscriber("/drp/drp_target", DiverRelativePosition, self.observation_callback, queue_size=3)
         self.rpy_pub = rospy.Publisher('/loco/command', Command, queue_size=3)
-    self.cmd_msg = Command()
+        self.cmd_msg = Command()
     
         
     def observation_callback(self, msg):
@@ -116,11 +116,11 @@ class DRPReactiveController(object):
         tx, ty, pd = self.current_observation
 
         image_center_x = self.image_w/2.0
-        image_center_y = self.image_h/3.0
+        image_center_y = self.image_h/2.0  ## TODO: changed from 3.0 to 2.0
         
         error_forward = 1.0 - pd
-        error_x = (tx - image_center_x)/ float(self.image_w)
-        error_y = (ty - image_center_y)/ float(self.image_h)
+        error_x = (tx - image_center_x)/ float(1.5*self.image_w)
+        error_y = (ty - image_center_y)/ float(1.5*self.image_h)
         
         return (error_forward, error_x, error_y)
 
@@ -148,8 +148,8 @@ class DRPReactiveController(object):
         now = rospy.Time.now().to_sec()
         target_active = (self.current_observation is not None and ( now - self.observation_ts  < (self.params_map['sec_before_giving_up'])))
 
-    if target_active:
-        ss, yy, pp, rr, hh = 0, 0, 0, 0, 0
+        if target_active:
+            ss, yy, pp, rr, hh = 0, 0, 0, 0, 0
             error_forward, error_yaw, error_pitch = self.compute_errors_from_estimate()
         #print (error_forward, error_yaw,  error_pitch)
       
@@ -175,17 +175,17 @@ class DRPReactiveController(object):
                     pp = 0.0
 
             print ('V, yaw, pitch : ', (ss, yy,  pp) )
-        self.set_vyprh_cmd(ss, yy, pp, rr, hh)
+            self.set_vyprh_cmd(ss, yy, pp, rr, hh)
 
-    else:
-        print ('Target out of sight.')
-        self.set_vyprh_cmd(0, 0, 0, 0, 0)
+        else:
+            print ('Target out of sight.')
+            self.set_vyprh_cmd(0, 0, 0, 0, 0)
 
-    self._release_all_mutexes()        
-    return 
+        self._release_all_mutexes()        
+        return 
 
     def set_vyprh_cmd(self, ss, yy, pp, rr, hh):
-        self.cmd_msg.throttle = ss+0.2
+        self.cmd_msg.throttle = ss+0.15  ##ss+0.2
         self.cmd_msg.yaw = yy
         self.cmd_msg.pitch = pp
         #self.cmd_msg.roll = rr
