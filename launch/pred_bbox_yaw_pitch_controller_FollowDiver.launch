@@ -1,0 +1,12 @@
+<launch>
+  <arg name="follow_yaw_pitch_ctr" default="true" />
+  
+  <node pkg="target_following" type="darknet_pred_bbox_yaw_pitch_controller.py" output="screen" name="bbox_yaw_pitch_controller">
+       <param name="follow_yaw_pitch_ctr"   value="$(arg follow_yaw_pitch_ctr)" />
+       <rosparam command="load" file="$(find target_following)/data/pred_bbox_yaw_pitch_ctr_pid_params_DIVER.yaml" />
+  </node>
+  
+  <!--launch diver-detection & prediction node-->
+  <!-- <include file="$(find diver_prediction)/launch/diver_pred_test.launch"/> -->
+
+</launch>

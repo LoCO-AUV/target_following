@@ -180,7 +180,7 @@ class DRPReactiveController(object):
         if target_active:
             ss, yy, pp, rr, hh = 0, 0, 0, 0, 0
             error_forward, error_yaw, error_pitch = self.compute_errors_from_estimate()
-        #print (error_forward, error_yaw,  error_pitch)
+            print ("error forward: ", error_forward, "error_yaw: ", error_yaw,  "error_pitch: ", error_pitch)
       
             self.vx_pid.update(error_forward, now)
             self.yaw_pid.update(error_yaw, now)
@@ -217,7 +217,7 @@ class DRPReactiveController(object):
     def set_vyprh_cmd(self, ss, yy, pp, rr, hh):
         self.cmd_msg.throttle = ss+0 # 0.2
         self.cmd_msg.yaw = yy
-        self.cmd_msg.pitch = -pp
+        self.cmd_msg.pitch = pp
         #self.cmd_msg.roll = rr
         #self.cmd_msg.heave = hh
     
